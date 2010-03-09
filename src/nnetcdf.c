@@ -91,7 +91,7 @@ char * NNC_Get_String(int ncid, char *name, jmp_buf error_env)
 	Err_Append(".\n");
 	longjmp(error_env, NNCDF_ERROR);
     }
-    if ( !(val = MALLOC(len)) ) {
+    if ( !(val = MALLOC(len + 1)) ) {
 	Err_Append("Allocation failed for ");
 	Err_Append(name);
 	Err_Append(".\n");
