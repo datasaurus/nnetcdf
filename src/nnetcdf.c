@@ -32,8 +32,8 @@
  */
 
 #include <string.h>
+#include <stdio.h>
 #include "alloc.h"
-#include "err_msg.h"
 #include "nnetcdf.h"
 
 /* Open a NetCDF file. See nnetcdf (3). */
@@ -43,11 +43,8 @@ int NNC_Open(char *file_nm, jmp_buf error_env)
     int ncid;
 
     if ((status = nc_open(file_nm, 0, &ncid)) != 0) {
-	Err_Append("Could not open ");
-	Err_Append(file_nm ? file_nm : "(NULL)");
-	Err_Append(".  NetCDF error message is:\n");
-	Err_Append(nc_strerror(status));
-	Err_Append(".\n");
+	fprintf(stderr, "Could not open %s. NetCDF error message is: %s\n",
+		file_nm ? file_nm : "(NULL)", nc_strerror(status));
 	longjmp(error_env, NNCDF_ERROR);
     }
     return ncid;
@@ -61,19 +58,14 @@ size_t NNC_Inq_Dim(int ncid, char *name, jmp_buf error_env)
     size_t len;
 
     if ((status = nc_inq_dimid(ncid, name, &dimid)) != 0) {
-	Err_Append("Could not find dimension named ");
-	Err_Append(name);
-	Err_Append(".  NetCDF error message is:\n");
-	Err_Append(nc_strerror(status));
-	Err_Append(".\n");
+	fprintf(stderr, "Could not find dimension named %s. "
+		"NetCDF error message is: %s\n",
+		name, nc_strerror(status));
 	longjmp(error_env, NNCDF_ERROR);
     }
     if ((status = nc_inq_dim(ncid, dimid, NULL, &len)) != 0) {
-	Err_Append("Could not retrieve size of ");
-	Err_Append(name);
-	Err_Append("dimension.  NetCDF error message is:\n");
-	Err_Append(nc_strerror(status));
-	Err_Append(".\n");
+	fprintf(stderr, "Could not retrieve size of %s dimension.  "
+		"NetCDF error message is: %s\n", name, nc_strerror(status));
 	longjmp(error_env, NNCDF_ERROR);
     }
     return len;
@@ -90,44 +82,31 @@ char * NNC_Get_String(int ncid, char *name, jmp_buf error_env)
     int status;		/* NetCDF function return value */
 
     if ((status = nc_inq_varid(ncid, name, &varid)) != 0) {
-	Err_Append("No variable named ");
-	Err_Append(name);
-	Err_Append(".  NetCDF error message is:\n");
-	Err_Append(nc_strerror(status));
-	Err_Append(".\n");
+	fprintf(stderr, "No variable named %s. NetCDF error message is: %s\n",
+		name, nc_strerror(status));
 	longjmp(error_env, NNCDF_ERROR);
     }
     if ((status = nc_inq_vardimid(ncid, varid, &dimid)) != 0) {
-	Err_Append("Could not get dimension for ");
-	Err_Append(name);
-	Err_Append(".  NetCDF error message is:\n");
-	Err_Append(nc_strerror(status));
-	Err_Append(".\n");
+	fprintf(stderr, "Could not get dimension for %s. "
+		"NetCDF error message is: %s\n",
+		name, nc_strerror(status));
 	longjmp(error_env, NNCDF_ERROR);
     }
     if ((status = nc_inq_dimlen(ncid, dimid, &len)) != 0) {
-	Err_Append("Could not get dimension length for ");
-	Err_Append(name);
-	Err_Append(".  NetCDF error message is:\n");
-	Err_Append(nc_strerror(status));
-	Err_Append(".\n");
+	fprintf(stderr, "Could not get dimension length for %s. "
+		"NetCDF error message is: %s\n", name, nc_strerror(status));
 	longjmp(error_env, NNCDF_ERROR);
     }
     if ( !(val = MALLOC(len + 1)) ) {
-	Err_Append("Allocation failed for ");
-	Err_Append(name);
-	Err_Append(".\n");
+	fprintf(stderr, "Allocation failed for %s.\n", name);
 	longjmp(error_env, NNCDF_ERROR);
     }
     for (c = val, ce = c + len; c < ce; c++) {
 	*c = ' ';
     }
     if ((status = nc_get_var_text(ncid, varid, val)) != 0) {
-	Err_Append("Could not get value for ");
-	Err_Append(name);
-	Err_Append(".  NetCDF error message is:\n");
-	Err_Append(nc_strerror(status));
-	Err_Append(".\n");
+	fprintf(stderr, "Could not get value for %s. NetCDF error message "
+		"is: %s\n", name, nc_strerror(status));
 	longjmp(error_env, NNCDF_ERROR);
     }
     *(val + len) = '\0';
@@ -142,11 +121,8 @@ char *NNC_Get_Var_Text(int ncid, char *name, char *cPtr, jmp_buf error_env)
     int status;
 
     if ((status = nc_inq_varid(ncid, name, &varid)) != 0) {
-	Err_Append("No variable named ");
-	Err_Append(name);
-	Err_Append(".  NetCDF error message is:\n");
-	Err_Append(nc_strerror(status));
-	Err_Append(".\n");
+	fprintf(stderr, "No variable named %s. NetCDF error message is: %s\n",
+		name, nc_strerror(status));
 	longjmp(error_env, NNCDF_ERROR);
     }
     if ( !cPtr ) {
@@ -156,53 +132,41 @@ char *NNC_Get_Var_Text(int ncid, char *name, char *cPtr, jmp_buf error_env)
 	size_t sz;
 
 	if ((status = nc_inq_varndims(ncid, varid, &ndims)) != 0) {
-	    Err_Append("Could not get dimension count for ");
-	    Err_Append(name);
-	    Err_Append(".  NetCDF error message is:\n");
-	    Err_Append(nc_strerror(status));
-	    Err_Append(".\n");
+	    fprintf(stderr, "Could not get dimension count for %s. "
+		    "NetCDF error message is: %s\n",
+		    name, nc_strerror(status));
 	    longjmp(error_env, NNCDF_ERROR);
 	}
 	if ( !(dimidPtr = REALLOC(dimidPtr, ndims * sizeof(int))) ) {
-	    Err_Append("Could not allocate dimension array for ");
-	    Err_Append(name);
-	    Err_Append(".\n");
+	    fprintf(stderr, "Could not allocate %d dimension array for %s\n",
+		    ndims, name);
 	    longjmp(error_env, NNCDF_ERROR);
 	}
 	if ((status = nc_inq_vardimid(ncid, varid, dimidPtr)) != 0) {
-	    Err_Append("Could not get dimensions for ");
-	    Err_Append(name);
-	    Err_Append(".  NetCDF error message is:\n");
-	    Err_Append(nc_strerror(status));
-	    Err_Append(".\n");
+	    fprintf(stderr, "Could not get dimensions for %s. "
+		    "NetCDF error message is: %s\n", name, nc_strerror(status));
 	    longjmp(error_env, NNCDF_ERROR);
 	}
 	for (sz = 1, d = dimidPtr, de = d + ndims; d < de; d++) {
 	    size_t l;
 
 	    if ((status = nc_inq_dimlen(ncid, *d, &l)) != 0) {
-		Err_Append("Could not get dimension size for ");
-		Err_Append(name);
-		Err_Append(".  NetCDF error message is:\n");
-		Err_Append(nc_strerror(status));
-		Err_Append(".\n");
+		fprintf(stderr, "Could not get dimension size for %s. "
+			"NetCDF error message is: %s\n",
+			name, nc_strerror(status));
 		longjmp(error_env, NNCDF_ERROR);
 	    }
 	    sz *= l;
 	}
 	if ( !(cPtr = MALLOC(sz)) ) {
-	    Err_Append("Could not allocate dimension array for ");
-	    Err_Append(name);
-	    Err_Append(".\n");
+	    fprintf(stderr, "Could not allocate dimension array for %s\n",
+		    name);
 	    longjmp(error_env, NNCDF_ERROR);
 	}
     }
     if ((status = nc_get_var_text(ncid, varid, cPtr)) != 0) {
-	Err_Append("Could not get value for ");
-	Err_Append(name);
-	Err_Append(".  NetCDF error message is:\n");
-	Err_Append(nc_strerror(status));
-	Err_Append(".\n");
+	fprintf(stderr, "Could not get value for %s. "
+		"NetCDF error message is: %s\n", name, nc_strerror(status));
 	longjmp(error_env, NNCDF_ERROR);
     }
     return cPtr;
@@ -216,11 +180,8 @@ unsigned char * NNC_Get_Var_UChar(int ncid, char *name, unsigned char *uPtr,
     int status;
 
     if ((status = nc_inq_varid(ncid, name, &varid)) != 0) {
-	Err_Append("No variable named ");
-	Err_Append(name);
-	Err_Append(".  NetCDF error message is:\n");
-	Err_Append(nc_strerror(status));
-	Err_Append(".\n");
+	fprintf(stderr, "No variable named %s. NetCDF error message is: %s\n",
+		name, nc_strerror(status));
 	longjmp(error_env, NNCDF_ERROR);
     }
     if ( !uPtr ) {
@@ -230,53 +191,41 @@ unsigned char * NNC_Get_Var_UChar(int ncid, char *name, unsigned char *uPtr,
 	size_t sz;
 
 	if ((status = nc_inq_varndims(ncid, varid, &ndims)) != 0) {
-	    Err_Append("Could not get dimension count for ");
-	    Err_Append(name);
-	    Err_Append(".  NetCDF error message is:\n");
-	    Err_Append(nc_strerror(status));
-	    Err_Append(".\n");
+	    fprintf(stderr, "Could not get dimension count for %s. "
+		    "NetCDF error message is: %s\n",
+		    name, nc_strerror(status));
 	    longjmp(error_env, NNCDF_ERROR);
 	}
 	if ( !(dimidPtr = REALLOC(dimidPtr, ndims * sizeof(int))) ) {
-	    Err_Append("Could not allocate dimension array for ");
-	    Err_Append(name);
-	    Err_Append(".\n");
+	    fprintf(stderr, "Could not allocate dimension array for %s\n",
+		    name);
 	    longjmp(error_env, NNCDF_ERROR);
 	}
 	if ((status = nc_inq_vardimid(ncid, varid, dimidPtr)) != 0) {
-	    Err_Append("Could not get dimensions for ");
-	    Err_Append(name);
-	    Err_Append(".  NetCDF error message is:\n");
-	    Err_Append(nc_strerror(status));
-	    Err_Append(".\n");
+	    fprintf(stderr, "Could not get dimensions for %s. "
+		    "NetCDF error message is: %s\n", name, nc_strerror(status));
 	    longjmp(error_env, NNCDF_ERROR);
 	}
 	for (sz = 1, d = dimidPtr, de = d + ndims; d < de; d++) {
 	    size_t l;
 
 	    if ((status = nc_inq_dimlen(ncid, *d, &l)) != 0) {
-		Err_Append("Could not get dimension size for ");
-		Err_Append(name);
-		Err_Append(".  NetCDF error message is:\n");
-		Err_Append(nc_strerror(status));
-		Err_Append(".\n");
+		fprintf(stderr, "Could not get dimension size for %s. "
+			"NetCDF error message is:%s\n",
+			name, nc_strerror(status));
 		longjmp(error_env, NNCDF_ERROR);
 	    }
 	    sz *= l;
 	}
 	if ( !(uPtr = MALLOC(sz * sizeof(int))) ) {
-	    Err_Append("Could not allocate dimension array for ");
-	    Err_Append(name);
-	    Err_Append(".\n");
+	    fprintf(stderr, "Could not allocate dimension array for %s\n",
+		    name);
 	    longjmp(error_env, NNCDF_ERROR);
 	}
     }
     if ((status = nc_get_var_uchar(ncid, varid, uPtr)) != 0) {
-	Err_Append("Could not get value for ");
-	Err_Append(name);
-	Err_Append(".  NetCDF error message is:\n");
-	Err_Append(nc_strerror(status));
-	Err_Append(".\n");
+	fprintf(stderr, "Could not get value for %s.  "
+		"NetCDF error message is: %s\n", name, nc_strerror(status));
 	longjmp(error_env, NNCDF_ERROR);
     }
     return uPtr;
@@ -289,11 +238,8 @@ int * NNC_Get_Var_Int(int ncid, char *name, int *iPtr, jmp_buf error_env)
     int status;
 
     if ((status = nc_inq_varid(ncid, name, &varid)) != 0) {
-	Err_Append("No variable named ");
-	Err_Append(name);
-	Err_Append(".  NetCDF error message is:\n");
-	Err_Append(nc_strerror(status));
-	Err_Append(".\n");
+	fprintf(stderr, "No variable named %s. NetCDF error message is: %s\n",
+		name, nc_strerror(status));
 	longjmp(error_env, NNCDF_ERROR);
     }
     if ( !iPtr ) {
@@ -303,53 +249,42 @@ int * NNC_Get_Var_Int(int ncid, char *name, int *iPtr, jmp_buf error_env)
 	size_t sz;
 
 	if ((status = nc_inq_varndims(ncid, varid, &ndims)) != 0) {
-	    Err_Append("Could not get dimension count for ");
-	    Err_Append(name);
-	    Err_Append(".  NetCDF error message is:\n");
-	    Err_Append(nc_strerror(status));
-	    Err_Append(".\n");
+	    fprintf(stderr, "Could not get dimension count for %s. "
+		    "NetCDF error message is: %s\n",
+		    name, nc_strerror(status));
 	    longjmp(error_env, NNCDF_ERROR);
 	}
 	if ( !(dimidPtr = REALLOC(dimidPtr, ndims * sizeof(int))) ) {
-	    Err_Append("Could not allocate dimension array for ");
-	    Err_Append(name);
-	    Err_Append(".\n");
+	    fprintf(stderr, "Could not allocate dimension array for %s\n",
+		    name);
 	    longjmp(error_env, NNCDF_ERROR);
 	}
 	if ((status = nc_inq_vardimid(ncid, varid, dimidPtr)) != 0) {
-	    Err_Append("Could not get dimensions for ");
-	    Err_Append(name);
-	    Err_Append(".  NetCDF error message is:\n");
-	    Err_Append(nc_strerror(status));
-	    Err_Append(".\n");
+	    fprintf(stderr, "Could not get dimensions for %s. "
+		    "NetCDF error message is: %s\n", name, nc_strerror(status));
 	    longjmp(error_env, NNCDF_ERROR);
 	}
 	for (sz = 1, d = dimidPtr, de = d + ndims; d < de; d++) {
 	    size_t l;
 
 	    if ((status = nc_inq_dimlen(ncid, *d, &l)) != 0) {
-		Err_Append("Could not get dimension size for ");
-		Err_Append(name);
-		Err_Append(".  NetCDF error message is:\n");
-		Err_Append(nc_strerror(status));
-		Err_Append(".\n");
+		fprintf(stderr, "Could not get dimension size for %s. "
+			"NetCDF error message is:%s\n",
+			name, nc_strerror(status));
 		longjmp(error_env, NNCDF_ERROR);
 	    }
 	    sz *= l;
 	}
 	if ( !(iPtr = MALLOC(sz * sizeof(int))) ) {
-	    Err_Append("Could not allocate dimension array for ");
-	    Err_Append(name);
-	    Err_Append(".\n");
+	    fprintf(stderr, "Could not allocate dimension array for %s\n",
+		    name);
 	    longjmp(error_env, NNCDF_ERROR);
 	}
     }
     if ((status = nc_get_var_int(ncid, varid, iPtr)) != 0) {
-	Err_Append("Could not get value for ");
-	Err_Append(name);
-	Err_Append(".  NetCDF error message is:\n");
-	Err_Append(nc_strerror(status));
-	Err_Append(".\n");
+	fprintf(stderr, "Could not get value for %s.  "
+		"NetCDF error message is: %s\n",
+		name, nc_strerror(status));
 	longjmp(error_env, NNCDF_ERROR);
     }
     return iPtr;
@@ -362,11 +297,8 @@ float * NNC_Get_Var_Float(int ncid, char *name, float *fPtr, jmp_buf error_env)
     int status;
 
     if ((status = nc_inq_varid(ncid, name, &varid)) != 0) {
-	Err_Append("No variable named ");
-	Err_Append(name);
-	Err_Append(".  NetCDF error message is:\n");
-	Err_Append(nc_strerror(status));
-	Err_Append(".\n");
+	fprintf(stderr, "No variable named %s. NetCDF error message is: %s\n",
+		name, nc_strerror(status));
 	longjmp(error_env, NNCDF_ERROR);
     }
     if ( !fPtr ) {
@@ -376,70 +308,58 @@ float * NNC_Get_Var_Float(int ncid, char *name, float *fPtr, jmp_buf error_env)
 	size_t sz;
 
 	if ((status = nc_inq_varndims(ncid, varid, &ndims)) != 0) {
-	    Err_Append("Could not get dimension count for ");
-	    Err_Append(name);
-	    Err_Append(".  NetCDF error message is:\n");
-	    Err_Append(nc_strerror(status));
-	    Err_Append(".\n");
+	    fprintf(stderr, "Could not get dimension count for %s. "
+		    "NetCDF error message is: %s\n",
+		    name, nc_strerror(status));
 	    longjmp(error_env, NNCDF_ERROR);
 	}
 	if ( !(dimidPtr = REALLOC(dimidPtr, ndims * sizeof(int))) ) {
-	    Err_Append("Could not allocate dimension array for ");
-	    Err_Append(name);
-	    Err_Append(".\n");
+	    fprintf(stderr, "Could not allocate dimension array for %s\n",
+		    name);
 	    longjmp(error_env, NNCDF_ERROR);
 	}
 	if ((status = nc_inq_vardimid(ncid, varid, dimidPtr)) != 0) {
-	    Err_Append("Could not get dimensions for ");
-	    Err_Append(name);
-	    Err_Append(".  NetCDF error message is:\n");
-	    Err_Append(nc_strerror(status));
-	    Err_Append(".\n");
+	    fprintf(stderr, "Could not get dimensions for %s. "
+		    "NetCDF error message is: %s\n",
+		    name, nc_strerror(status));
 	    longjmp(error_env, NNCDF_ERROR);
 	}
 	for (sz = 1, d = dimidPtr, de = d + ndims; d < de; d++) {
 	    size_t l;
 
 	    if ((status = nc_inq_dimlen(ncid, *d, &l)) != 0) {
-		Err_Append("Could not get dimension size for ");
-		Err_Append(name);
-		Err_Append(".  NetCDF error message is:\n");
-		Err_Append(nc_strerror(status));
-		Err_Append(".\n");
+		fprintf(stderr, "Could not get dimension size for %s. "
+			"NetCDF error message is:%s\n",
+			name, nc_strerror(status));
 		longjmp(error_env, NNCDF_ERROR);
 	    }
 	    sz *= l;
 	}
 	if ( !(fPtr = MALLOC(sz * sizeof(float))) ) {
-	    Err_Append("Could not allocate dimension array for ");
-	    Err_Append(name);
-	    Err_Append(".\n");
+	    fprintf(stderr, "Could not allocate dimension array for %s\n",
+		    name);
 	    longjmp(error_env, NNCDF_ERROR);
 	}
     }
     if ((status = nc_get_var_float(ncid, varid, fPtr)) != 0) {
-	Err_Append("Could not get value for ");
-	Err_Append(name);
-	Err_Append(".  NetCDF error message is:\n");
-	Err_Append(nc_strerror(status));
-	Err_Append(".\n");
+	fprintf(stderr, "Could not get value for %s.  "
+		"NetCDF error message is: %s\n",
+		name, nc_strerror(status));
 	longjmp(error_env, NNCDF_ERROR);
     }
     return fPtr;
 }
 
 /* Retrieve a double variable from a NetCDF file. See nnetcdf (3). */
-double * NNC_Get_Var_Double(int ncid, char *name, double *dPtr, jmp_buf error_env)
+double * NNC_Get_Var_Double(int ncid, char *name, double *dPtr,
+	jmp_buf error_env)
 {
     int varid;		/* Variable identifier */
     int status;
 
     if ((status = nc_inq_varid(ncid, name, &varid)) != 0) {
-	Err_Append("No variable named ");
-	Err_Append(name);
-	Err_Append(".  NetCDF error message is:\n");
-	Err_Append(nc_strerror(status));
-	Err_Append(".\n");
+	fprintf(stderr, "No variable named %s. NetCDF error message is: %s\n",
+		name, nc_strerror(status));
 	longjmp(error_env, NNCDF_ERROR);
     }
     if ( !dPtr ) {
@@ -449,53 +369,43 @@ double * NNC_Get_Var_Double(int ncid, char *name, double *dPtr, jmp_buf error_en
 	size_t sz;
 
 	if ((status = nc_inq_varndims(ncid, varid, &ndims)) != 0) {
-	    Err_Append("Could not get dimension count for ");
-	    Err_Append(name);
-	    Err_Append(".  NetCDF error message is:\n");
-	    Err_Append(nc_strerror(status));
-	    Err_Append(".\n");
+	    fprintf(stderr, "Could not get dimension count for %s. "
+		    "NetCDF error message is: %s\n",
+		    name, nc_strerror(status));
 	    longjmp(error_env, NNCDF_ERROR);
 	}
 	if ( !(dimidPtr = REALLOC(dimidPtr, ndims * sizeof(int))) ) {
-	    Err_Append("Could not allocate dimension array for ");
-	    Err_Append(name);
-	    Err_Append(".\n");
+	    fprintf(stderr, "Could not allocate dimension array for %s\n",
+		    name);
 	    longjmp(error_env, NNCDF_ERROR);
 	}
 	if ((status = nc_inq_vardimid(ncid, varid, dimidPtr)) != 0) {
-	    Err_Append("Could not get dimensions for ");
-	    Err_Append(name);
-	    Err_Append(".  NetCDF error message is:\n");
-	    Err_Append(nc_strerror(status));
-	    Err_Append(".\n");
+	    fprintf(stderr, "Could not get dimensions for %s. "
+		    "NetCDF error message is: %s\n",
+		    name, nc_strerror(status));
 	    longjmp(error_env, NNCDF_ERROR);
 	}
 	for (sz = 1, d = dimidPtr, de = d + ndims; d < de; d++) {
 	    size_t l;
 
 	    if ((status = nc_inq_dimlen(ncid, *d, &l)) != 0) {
-		Err_Append("Could not get dimension size for ");
-		Err_Append(name);
-		Err_Append(".  NetCDF error message is:\n");
-		Err_Append(nc_strerror(status));
-		Err_Append(".\n");
+		fprintf(stderr, "Could not get dimension size for %s."
+			" NetCDF error message is:%s\n",
+			name, nc_strerror(status));
 		longjmp(error_env, NNCDF_ERROR);
 	    }
 	    sz *= l;
 	}
 	if ( !(dPtr = MALLOC(sz * sizeof(double))) ) {
-	    Err_Append("Could not allocate dimension array for ");
-	    Err_Append(name);
-	    Err_Append(".\n");
+	    fprintf(stderr, "Could not allocate dimension array for %s\n",
+		    name);
 	    longjmp(error_env, NNCDF_ERROR);
 	}
     }
     if ((status = nc_get_var_double(ncid, varid, dPtr)) != 0) {
-	Err_Append("Could not get value for ");
-	Err_Append(name);
-	Err_Append(".  NetCDF error message is:\n");
-	Err_Append(nc_strerror(status));
-	Err_Append(".\n");
+	fprintf(stderr, "Could not get value for %s. "
+		" NetCDF error message is: %s\n",
+		name, nc_strerror(status));
 	longjmp(error_env, NNCDF_ERROR);
     }
     return dPtr;
@@ -513,44 +423,34 @@ char * NNC_Get_Att_String(int ncid, char *name, char *att, jmp_buf error_env)
 	varid = NC_GLOBAL;
 	name = "global attribute";
     } else if ((status = nc_inq_varid(ncid, name, &varid)) != 0) {
-	Err_Append("No variable named ");
-	Err_Append(name);
-	Err_Append(".  NetCDF error message is:\n");
-	Err_Append(nc_strerror(status));
-	Err_Append(".\n");
+	fprintf(stderr, "No variable named %s. NetCDF error message is: %s\n",
+		name, nc_strerror(status));
 	longjmp(error_env, NNCDF_ERROR);
     }
     if ((status = nc_inq_attlen(ncid, varid, att, &len)) != 0) {
-	Err_Append("Could not get string length for ");
-	Err_Append(att);
-	Err_Append(" of ");
-	Err_Append(name);
-	Err_Append(".  NetCDF error message is:\n");
-	Err_Append(nc_strerror(status));
-	Err_Append(".\n");
+	fprintf(stderr, "Could not get string length for %s of %s."
+		" NetCDF error message is: %s\n",
+		att, name, nc_strerror(status));
 	longjmp(error_env, NNCDF_ERROR);
     }
     if ( !(val = MALLOC(len + 1)) ) {
-	Err_Append("Allocation failed for ");
-	Err_Append(name);
-	Err_Append(".\n");
+	fprintf(stderr, "Allocation failed for %s\n",name);
 	longjmp(error_env, NNCDF_ERROR);
     }
     if ((status = nc_get_att_text(ncid, varid, att, val)) != 0) {
-	Err_Append("Could not get ");
-	Err_Append(att);
-	Err_Append("attribute for ");
-	Err_Append(name);
-	Err_Append(".  NetCDF error message is:\n");
-	Err_Append(nc_strerror(status));
-	Err_Append(".\n");
+	fprintf(stderr, "Could not get %s for %s."
+		" NetCDF error message is: %s\n",
+		att, name, nc_strerror(status));
 	longjmp(error_env, NNCDF_ERROR);
     }
     val[len] = '\0';
     return val;
 }
 
-/* Get a integer attribute associated with a NetCDF variable. See nnetcdf (3). */
+/*
+   Get an integer attribute associated with a NetCDF variable. See nnetcdf (3).
+ */
+
 int NNC_Get_Att_Int(int ncid, char *name, char *att, jmp_buf error_env)
 {
     int varid;
@@ -561,21 +461,14 @@ int NNC_Get_Att_Int(int ncid, char *name, char *att, jmp_buf error_env)
 	varid = NC_GLOBAL;
 	name = "global attribute";
     } else if ((status = nc_inq_varid(ncid, name, &varid)) != 0) {
-	Err_Append("No variable named ");
-	Err_Append(name);
-	Err_Append(".  NetCDF error message is:\n");
-	Err_Append(nc_strerror(status));
-	Err_Append(".\n");
+	fprintf(stderr, "No variable named %s. NetCDF error message is: %s\n",
+		name, nc_strerror(status));
 	longjmp(error_env, NNCDF_ERROR);
     }
     if ((status = nc_get_att_int(ncid, varid, att, &i)) != 0) {
-	Err_Append("Could not get ");
-	Err_Append(att);
-	Err_Append("attribute for ");
-	Err_Append(name);
-	Err_Append(".  NetCDF error message is:\n");
-	Err_Append(nc_strerror(status));
-	Err_Append(".\n");
+	fprintf(stderr, "Could not get %s attribute for %s."
+		" NetCDF error message is: %s\n",
+		att, name, nc_strerror(status));
 	longjmp(error_env, NNCDF_ERROR);
     }
     return i;
@@ -592,21 +485,14 @@ float NNC_Get_Att_Float(int ncid, char *name, char *att, jmp_buf error_env)
 	varid = NC_GLOBAL;
 	name = "global attribute";
     } else if ((status = nc_inq_varid(ncid, name, &varid)) != 0) {
-	Err_Append("No variable named ");
-	Err_Append(name);
-	Err_Append(".  NetCDF error message is:\n");
-	Err_Append(nc_strerror(status));
-	Err_Append(".\n");
+	fprintf(stderr, "No variable named %s. NetCDF error message is: %s\n",
+		name, nc_strerror(status));
 	longjmp(error_env, NNCDF_ERROR);
     }
     if ((status = nc_get_att_float(ncid, varid, att, &v)) != 0) {
-	Err_Append("Could not get ");
-	Err_Append(att);
-	Err_Append("attribute for ");
-	Err_Append(name);
-	Err_Append(".  NetCDF error message is:\n");
-	Err_Append(nc_strerror(status));
-	Err_Append(".\n");
+	fprintf(stderr, "Could not get %s attribute for %s."
+		" NetCDF error message is: %s\n",
+		att, name, nc_strerror(status));
 	longjmp(error_env, NNCDF_ERROR);
     }
     return v;
