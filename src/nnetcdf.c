@@ -290,6 +290,66 @@ int * NNC_Get_Var_Int(int ncid, char *name, int *iPtr, jmp_buf error_env)
     return iPtr;
 }
 
+/* Retrieve an unsigned integer variable from a NetCDF file. See nnetcdf (3). */
+unsigned * NNC_Get_Var_UInt(int ncid, char *name, unsigned *iPtr,
+	jmp_buf error_env)
+{
+    int varid;		/* Variable identifier */
+    int status;
+
+    if ((status = nc_inq_varid(ncid, name, &varid)) != 0) {
+	fprintf(stderr, "No variable named %s. NetCDF error message is: %s\n",
+		name, nc_strerror(status));
+	longjmp(error_env, NNCDF_ERROR);
+    }
+    if ( !iPtr ) {
+	int ndims;
+	static int *dimidPtr;
+	int *d, *de;
+	size_t sz;
+
+	if ((status = nc_inq_varndims(ncid, varid, &ndims)) != 0) {
+	    fprintf(stderr, "Could not get dimension count for %s. "
+		    "NetCDF error message is: %s\n",
+		    name, nc_strerror(status));
+	    longjmp(error_env, NNCDF_ERROR);
+	}
+	if ( !(dimidPtr = REALLOC(dimidPtr, ndims * sizeof(int))) ) {
+	    fprintf(stderr, "Could not allocate dimension array for %s\n",
+		    name);
+	    longjmp(error_env, NNCDF_ERROR);
+	}
+	if ((status = nc_inq_vardimid(ncid, varid, dimidPtr)) != 0) {
+	    fprintf(stderr, "Could not get dimensions for %s. "
+		    "NetCDF error message is: %s\n", name, nc_strerror(status));
+	    longjmp(error_env, NNCDF_ERROR);
+	}
+	for (sz = 1, d = dimidPtr, de = d + ndims; d < de; d++) {
+	    size_t l;
+
+	    if ((status = nc_inq_dimlen(ncid, *d, &l)) != 0) {
+		fprintf(stderr, "Could not get dimension size for %s. "
+			"NetCDF error message is:%s\n",
+			name, nc_strerror(status));
+		longjmp(error_env, NNCDF_ERROR);
+	    }
+	    sz *= l;
+	}
+	if ( !(iPtr = MALLOC(sz * sizeof(int))) ) {
+	    fprintf(stderr, "Could not allocate dimension array for %s\n",
+		    name);
+	    longjmp(error_env, NNCDF_ERROR);
+	}
+    }
+    if ((status = nc_get_var_uint(ncid, varid, iPtr)) != 0) {
+	fprintf(stderr, "Could not get value for %s.  "
+		"NetCDF error message is: %s\n",
+		name, nc_strerror(status));
+	longjmp(error_env, NNCDF_ERROR);
+    }
+    return iPtr;
+}
+
 /* Retrieve a float variable from a NetCDF file. See nnetcdf (3). */
 float * NNC_Get_Var_Float(int ncid, char *name, float *fPtr, jmp_buf error_env)
 {
@@ -447,10 +507,7 @@ char * NNC_Get_Att_String(int ncid, char *name, char *att, jmp_buf error_env)
     return val;
 }
 
-/*
-   Get an integer attribute associated with a NetCDF variable. See nnetcdf (3).
- */
-
+/* Get integer attribute associated with a NetCDF variable. See nnetcdf (3). */
 int NNC_Get_Att_Int(int ncid, char *name, char *att, jmp_buf error_env)
 {
     int varid;
@@ -466,6 +523,34 @@ int NNC_Get_Att_Int(int ncid, char *name, char *att, jmp_buf error_env)
 	longjmp(error_env, NNCDF_ERROR);
     }
     if ((status = nc_get_att_int(ncid, varid, att, &i)) != 0) {
+	fprintf(stderr, "Could not get %s attribute for %s."
+		" NetCDF error message is: %s\n",
+		att, name, nc_strerror(status));
+	longjmp(error_env, NNCDF_ERROR);
+    }
+    return i;
+}
+
+/*
+   Get unsigned integer attribute associated with a NetCDF variable.
+   See nnetcdf (3).
+ */
+
+unsigned NNC_Get_Att_UInt(int ncid, char *name, char *att, jmp_buf error_env)
+{
+    int varid;
+    int status;
+    unsigned i;
+
+    if (strcmp(name, "NC_GLOBAL") == 0) {
+	varid = NC_GLOBAL;
+	name = "global attribute";
+    } else if ((status = nc_inq_varid(ncid, name, &varid)) != 0) {
+	fprintf(stderr, "No variable named %s. NetCDF error message is: %s\n",
+		name, nc_strerror(status));
+	longjmp(error_env, NNCDF_ERROR);
+    }
+    if ((status = nc_get_att_uint(ncid, varid, att, &i)) != 0) {
 	fprintf(stderr, "Could not get %s attribute for %s."
 		" NetCDF error message is: %s\n",
 		att, name, nc_strerror(status));

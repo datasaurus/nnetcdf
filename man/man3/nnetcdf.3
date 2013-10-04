@@ -4,11 +4,11 @@
 .\" 
 .\" Please address questions and feedback to dev0@trekix.net
 .\" 
-.\" $Revision: $ $Date: $
+.\" $Revision: 1.1 $ $Date: 2009/10/07 20:07:36 $
 .\"
 .TH nnetcdf 3 "NetCDF convenience functions"
 .SH NAME
-NNC_Open, NNC_Inq_Dim, NNC_Get_Var_Text, NNC_Get_String, NNC_Get_Var_Uchar, NNC_Get_Var_Int, NNC_Get_Var_Float, NNC_Get_Var_Double, NNC_Get_Att_String, NNC_Get_Att_Int, NNC_Get_Att_Float \- NetCDF convenience functions
+NNC_Open, NNC_Inq_Dim, NNC_Get_Var_Text, NNC_Get_String, NNC_Get_Var_Uchar, NNC_Get_Var_Int, NNC_Get_Var_UInt, NNC_Get_Var_Float, NNC_Get_Var_Double, NNC_Get_Att_String, NNC_Get_Att_Int, NNC_Get_Att_UInt, NNC_Get_Att_Float \- NetCDF convenience functions
 .SH SYNOPSIS
 .nf
 \fB#include "nnetcdf.h"\fP
@@ -20,6 +20,7 @@ NNC_Open, NNC_Inq_Dim, NNC_Get_Var_Text, NNC_Get_String, NNC_Get_Var_Uchar, NNC_
 \fBunsigned\fP \fBchar *\fP \fBNNC_Get_Var_UChar\fP(\fBint\fP \fIncid\fP, \fBchar *\fP\fIvar_name\fP, \fBunsigned\fP \fBchar *\fP\fIuPtr\fP,
     \fBjmp_buf\fP \fIerror_env\fP);
 \fBint *\fP \fBNNC_Get_Var_Int\fP(\fBint\fP \fIncid\fP, \fBchar *\fP\fIvar_name\fP, \fBint *\fP\fIiPtr\fP, \fBjmp_buf\fP \fIerror_env\fP);
+\fBunsigned *\fP \fBNNC_Get_Var_UInt\fP(\fBint\fP \fIncid\fP, \fBchar *\fP\fIvar_name\fP, \fBunsigned *\fP\fIiPtr\fP, \fBjmp_buf\fP \fIerror_env\fP);
 \fBfloat *\fP \fBNNC_Get_Var_Float\fP(\fBint\fP \fIncid\fP, \fBchar *\fP\fIvar_name\fP, \fBfloat *\fP\fIfPtr\fP,
     \fBjmp_buf\fP \fIerror_env\fP);
 \fBdouble *\fP \fBNNC_Get_Var_Double\fP(\fBint\fP \fIncid\fP, \fBchar *\fP\fIvar_name\fP, \fBdouble *\fP\fIdPtr\fP,
@@ -41,26 +42,23 @@ documentation for \fBsetjmp\fP and \fBlongjmp\fP for more information.
 
 \fBNNC_Open()\fP opens a NetCDF file named \fIfile_nm\fP and returns a NetCDF
 file identifier for it.
-It uses \fIerror_env\fP to handle errors as described above.  Error information
-will be appended to the global error message, which can be retrieved with a call
-to \fBErr_Get()\fP.
+It uses \fIerror_env\fP to handle errors as described above. It prints error
+messages to \fBstderr\fP.
 The file should eventually be closed with a call to \fBnc_close()\fP.
 
 \fBNNC_Inq_Dim()\fP returns the size of the dimension named \fIdim_name\fP
 from the NetCDF file identified as \fBncid\fP, which should be a return value
 from \fBNNC_Open()\fP or \fBnc_open()\fP.
-It uses \fIerror_env\fP to handle errors as described above.  Error information
-will be appended to the global error message, which can be retrieved with a call
-to \fBErr_Get()\fP.
+It uses \fIerror_env\fP to handle errors as described above.  It prints error
+messages to \fBstderr\fP.
 
 \fBNNC_Get_String()\fP returns a nul terminated string corresponding to variable
 named \fIvar_name\fP from the NetCDF file identified as \fBncid\fP, which should
 be a return value from \fBNNC_Open()\fP or \fBnc_open()\fP.
 Memory is allocated for the returned string.  This memory should eventually
 be freed with a call to \fBFREE()\fP.
-It uses \fIerror_env\fP to handle errors as described above.  Error information
-will be appended to the global error message, which can be retrieved with a call
-to \fBErr_Get()\fP.
+It uses \fIerror_env\fP to handle errors as described above.  It prints error
+messages to \fBstderr\fP.
 
 \fBNNC_Get_Var_Text()\fP returns the character array corresponding to variable
 \fIvar_name\fP from the NetCDF file identified as \fBncid\fP, which should be a
@@ -69,15 +67,17 @@ If \fIcPtr\fP is \fBNULL\fP, memory is allocated for the returned array.  This
 memory should eventually be freed with a call to \fBFREE()\fP.  If \fIcPtr\fP
 is not \fBNULL\fP, it should be a pointer to sufficient storage for the array.
 Then \fIcPtr\fP is returned with the values copied into it.
-It uses \fIerror_env\fP to handle errors as described above.  Error information
-will be appended to the global error message, which can be retrieved with a call
-to \fBErr_Get()\fP.
+It uses \fIerror_env\fP to handle errors as described above.  It prints error
+messages to \fBstderr\fP.
 
 \fBNNC_Get_Var_UChar()\fP is like \fBNNC_Get_Var_Text()\fP, except that it
 retrieves an array of unsigned characters.
 
 \fBNNC_Get_Var_Int()\fP is like \fBNNC_Get_Var_Text()\fP, except that it
 retrieves an array of integers.
+
+\fBNNC_Get_Var_UInt()\fP is like \fBNNC_Get_Var_Text()\fP, except that it
+retrieves an array of unsigned integers.
 
 \fBNNC_Get_Var_Float()\fP is like \fBNNC_Get_Var_Text()\fP, except that it
 retrieves an array of floats.
@@ -91,22 +91,26 @@ should be a return value from \fBNNC_Open()\fP or \fBnc_open()\fP.
 If \fIvar_name\fP is "\fBNC_GLOBAL\fP", a global attribute is sought.
 Memory is allocated for the returned string.  This memory should eventually
 be freed with a call to \fBFREE()\fP.
-It uses \fIerror_env\fP to handle errors as described above.  Error information
-will be appended to the global error message, which can be retrieved with a call
-to \fBErr_Get()\fP.
+It uses \fIerror_env\fP to handle errors as described above.  It prints error
+messages to \fBstderr\fP.
 
 \fBNNC_Get_Att_Int()\fP returns an integer attribute for the variable named
 \fIvar_name\fP in the NetCDF file identified as \fBncid\fP, which should be a
 return value from \fBNNC_Open()\fP or \fBnc_open()\fP.
 If \fIvar_name\fP is "\fBNC_GLOBAL\fP", a global attribute is sought.
-It uses \fIerror_env\fP to handle errors as described above.  Error information
-will be appended to the global error message, which can be retrieved with a call
-to \fBErr_Get()\fP.
+It uses \fIerror_env\fP to handle errors as described above.  It prints error
+messages to \fBstderr\fP.
+
+\fBNNC_Get_Att_UInt()\fP returns an unsigned integer attribute for the variable
+named \fIvar_name\fP in the NetCDF file identified as \fBncid\fP, which should
+be a return value from \fBNNC_Open()\fP or \fBnc_open()\fP.
+If \fIvar_name\fP is "\fBNC_GLOBAL\fP", a global attribute is sought.
+It uses \fIerror_env\fP to handle errors as described above.  It prints error
+messages to \fBstderr\fP.
 
 \fBNNC_Get_Att_Float()\fP is like \fBNNC_Get_Att_Int()\fP, except that it
 returns a float attribute.
 .SH SEE ALSO
-\fBnetcdf\fP (3), \fBsetjmp\fP (3), \fBlongjmp\fP (3), \fBalloc\fP (3),
-\fBerr_msg\fP (3)
+\fBnetcdf\fP (3), \fBsetjmp\fP (3), \fBlongjmp\fP (3), \fBalloc\fP (3)
 .SH AUTHOR
 Copyright (c) 2007, 2008, 2009 Gordon D. Carrie.  All rights reserved.

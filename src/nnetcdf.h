@@ -45,10 +45,12 @@ char *NNC_Get_Var_Text(int , char *, char *, jmp_buf);
 char *NNC_Get_String(int , char *, jmp_buf);
 unsigned char *NNC_Get_Var_UChar(int , char *, unsigned char *, jmp_buf);
 int *NNC_Get_Var_Int(int , char *, int *, jmp_buf);
+unsigned *NNC_Get_Var_UInt(int , char *, unsigned *, jmp_buf);
 float *NNC_Get_Var_Float(int , char *, float *, jmp_buf);
 double *NNC_Get_Var_Double(int , char *, double *, jmp_buf);
 char *NNC_Get_Att_String(int , char *, char *, jmp_buf);
 int NNC_Get_Att_Int(int , char *, char *, jmp_buf);
+unsigned NNC_Get_Att_UInt(int , char *, char *, jmp_buf);
 float NNC_Get_Att_Float(int , char *, char *, jmp_buf);
 
 #endif
