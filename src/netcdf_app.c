@@ -97,16 +97,18 @@ static int headers_cb(int argc, char *argv[])
     return 1;
 }
 
-/* nnetcdf data var_name start index [index ...] count index [index ...] file */
+/* nnetcdf data var_name index [index ...] file */
 static int data_cb(int argc, char *argv[])
 {
-    char *var_nm;			/* Variable name, from command line */
-    int var_id;				/* NetCDF identifier for variable */
     char *nc_fl_nm;			/* Path to NetCDF file */
     int nc_id;				/* NetCDF file identifier */
+    char *var_nm;			/* Variable name, from command line */
+    int var_id;				/* NetCDF identifier for variable */
+    nc_type xtype;			/* Type of var */
+    int num_idx;			/* Number of indeces specified on
+					   command line */
     int status;				/* Return code from NetCDF function
 					   call */
-    size_t *dim_len = NULL;		/* Length of each dimension */
     size_t *start = NULL;		/* Where to start slice in NetCDF file.
 					   See netcdf (3). */
     int num_dim;			/* Number of dimensions of variable */
@@ -115,20 +117,20 @@ static int data_cb(int argc, char *argv[])
 					   for which values will be printed.
 					   See netcdf (3). */
     int a, d;				/* Argument index, dimension index */
-    nc_type xtype;			/* Type of var */
     void *dat = NULL;			/* Data values to fetch and print */
     size_t num_elem;			/* Number of data values */
     int llen;				/* Number of elements in each line of
 					   output */
 
 
-    if ( argc < 5 || strcmp(argv[3], "start") != 0 ) {
-	fprintf(stderr, "Usage: %s %s var_name start index [index ...] "
-		"count index [index ...] file\n", argv[0], argv[1]);
+    if ( argc < 5 ) {
+	fprintf(stderr, "Usage: %s %s var_name index [index ...] file\n",
+		argv[0], argv[1]);
 	return 0;
     }
     var_nm = argv[2];
     nc_fl_nm = argv[argc - 1];
+    num_idx = argc - 4;
 
     /* Open data file and get information about the variable */
     if ( (status = nc_open(nc_fl_nm, 0, &nc_id)) != NC_NOERR ) {
@@ -151,6 +153,11 @@ static int data_cb(int argc, char *argv[])
 		"%s\n", argv[0], argv[1], var_nm, nc_strerror(status));
 	goto error;
     }
+    if ( num_idx > num_dim ) {
+	fprintf(stderr, "%s %s: number of indeces exceeds number of "
+		"dimensions.\n", argv[0], argv[1]);
+	goto error;
+    }
     if ( !(dim_ids = CALLOC(num_dim, sizeof(int))) ) {
 	fprintf(stderr, "%s %s: could not allocate array of %u dimension "
 		"identifiers.\n", argv[0], argv[1], num_dim);
@@ -159,11 +166,6 @@ static int data_cb(int argc, char *argv[])
     if ( !(start = CALLOC(num_dim, sizeof(size_t))) ) {
 	fprintf(stderr, "%s %s: could not allocate array of %u indeces.\n",
 		argv[0], argv[1], num_dim);
-	goto error;
-    }
-    if ( !(dim_len = CALLOC(num_dim, sizeof(size_t))) ) {
-	fprintf(stderr, "%s %s: could not allocate array of %u dimension "
-		"identifiers.\n", argv[0], argv[1], num_dim);
 	goto error;
     }
     if ( !(count = CALLOC(num_dim, sizeof(size_t))) ) {
@@ -179,29 +181,27 @@ static int data_cb(int argc, char *argv[])
 		"%s\n", argv[0], argv[1], var_nm, nc_strerror(status));
 	goto error;
     }
-    for (d = 0; d < num_dim; d++) {
-	status = nc_inq_dimlen(nc_id, dim_ids[d], dim_len + d);
-	if ( status != NC_NOERR ) {
-	    fprintf(stderr, "%s %s: could not get length for dimension %d.\n"
-		    "%s\n", argv[0], argv[1], d, nc_strerror(status));
-	    goto error;
-	}
-    }
 
-    /* Put indeces from command line into start and count */
-    for (a = 4, d = 0; a < argc - 1 && strcmp(argv[a], "count") != 0; a++, d++)
-    {
+
+    /* Put indeces from command line into start */
+    for (a = 3, d = 0; a < argc - 1; a++, d++) {
 	if ( sscanf(argv[a], "%d", start + d) != 1 ) {
 	    fprintf(stderr, "%s %s: expected integer for index %d, got %s\n",
 		    argv[0], argv[1], a - 3, argv[a]);
 	    goto error;
 	}
     }
-    num_elem = 1;
-    for (a++, d = 0; a < argc - 1; a++, d++) {
-	if ( sscanf(argv[a], "%d", count + d) != 1 ) {
-	    fprintf(stderr, "%s %s: expected integer for index %d, got %s\n",
-		    argv[0], argv[1], a - 3, argv[a]);
+
+    /*
+       No more indeces on command line. Leave start[d] = 0 for remaining
+       dimensions. Set remaining dimensions of count to the dimension sizes.
+     */
+
+    for (num_elem = 1 ; d < num_dim; d++) {
+	status = nc_inq_dimlen(nc_id, dim_ids[d], count + d);
+	if ( status != NC_NOERR ) {
+	    fprintf(stderr, "%s %s: could not get length for dimension %d.\n"
+		    "%s\n", argv[0], argv[1], d, nc_strerror(status));
 	    goto error;
 	}
 	num_elem *= count[d];
@@ -351,18 +351,16 @@ static int data_cb(int argc, char *argv[])
 	    goto error;
     }
 
-    FREE(dim_ids);
-    FREE(dim_len);
     FREE(start);
+    FREE(dim_ids);
     FREE(count);
     FREE(dat);
     nc_close(nc_id);
     return 1;
 
 error:
-    FREE(dim_ids);
-    FREE(dim_len);
     FREE(start);
+    FREE(dim_ids);
     FREE(count);
     FREE(dat);
     nc_close(nc_id);
