@@ -29,7 +29,7 @@
    .
    .	Please send feedback to dev0@trekix.net
    .
-   .	$Revision: 1.1 $ $Date: 2013/12/11 20:35:37 $
+   .	$Revision: 1.3 $ $Date: 2013/12/11 21:53:03 $
  */
 
 #include "unix_defs.h"
@@ -92,14 +92,104 @@ int main(int argc, char *argv[])
     return 0;
 }
 
+/* nnetcdf headers file */
 static int headers_cb(int argc, char *argv[])
 {
+    char *argv0, *argv1;		/* argv[0], argv[1] */
+    char *nc_fl_nm;			/* Path to NetCDF file */
+    int nc_id;				/* NetCDF file identifier */
+    int status;				/* Return code from NetCDF function
+					   call */
+    char name[NC_MAX_NAME];		/* Dimension or variable name */
+    int num_dims, num_vars;		/* Number of dimensions, variables */
+    int *dim_ids = NULL;		/* Dimension identifiers */
+    size_t len;				/* Dimension length */
+    nc_type xtype;			/* Data type */
+    int d, v;				/* Dimension, variable index */
+
+    argv0 = argv[0];
+    argv1 = argv[1];
+    if ( argc != 3 ) {
+	fprintf(stderr, "Usage: %s %s file\n", argv0, argv1);
+	return 0;
+    }
+    nc_fl_nm = argv[2];
+    if ( (status = nc_open(nc_fl_nm, 0, &nc_id)) != NC_NOERR ) {
+	fprintf(stderr, "%s %s: failed to open %s.\n%s\n",
+		argv0, argv1, nc_fl_nm, nc_strerror(status));
+	goto error;
+    }
+    if ( (status = nc_inq_ndims(nc_id, &num_dims)) != NC_NOERR ) {
+	fprintf(stderr, "%s %s: could not get number of dimensions.\n"
+		"%s\n", argv0, argv1, nc_strerror(status));
+	goto error;
+    }
+    for (d = 0; d < num_dims; d++) {
+	if ( (status = nc_inq_dim(nc_id, d, name, &len)) != NC_NOERR ) {
+	    fprintf(stderr, "%s %s: could not get information for dimension"
+		    " %d.\n%s\n", argv0, argv1, d, nc_strerror(status));
+	    goto error;
+	}
+	printf("dim %s %zi\n", name, len);
+    }
+    if ( (status = nc_inq_nvars(nc_id, &num_vars)) != NC_NOERR ) {
+	fprintf(stderr, "%s %s: could not get number of variables.\n"
+		"%s\n", argv0, argv1, nc_strerror(status));
+	goto error;
+    }
+    if ( !(dim_ids = CALLOC(num_dims, sizeof(int))) ) {
+	fprintf(stderr, "%s %s: could not allocate array of %u dimension "
+		"identifiers.\n", argv0, argv1, num_dims);
+	goto error;
+    }
+    for (v = 0; v < num_vars; v++) {
+	status = nc_inq_var(nc_id, v, name, &xtype, &num_dims, dim_ids, NULL);
+	if ( status != NC_NOERR ) {
+	    fprintf(stderr, "%s %s: could not get information for variable"
+		    " %d.\n%s\n", argv0, argv1, v, nc_strerror(status));
+	    goto error;
+	}
+	printf("var %s", name);
+	switch (xtype) {
+	    case NC_BYTE:   printf(" NC_BYTE");   break;
+	    case NC_CHAR:   printf(" NC_CHAR");   break;
+	    case NC_SHORT:  printf(" NC_SHORT");  break;
+	    case NC_INT:    printf(" NC_INT");    break;
+	    case NC_FLOAT:  printf(" NC_FLOAT");  break;
+	    case NC_DOUBLE: printf(" NC_DOUBLE"); break;
+	    case NC_UBYTE:  printf(" NC_UBYTE");  break;
+	    case NC_USHORT: printf(" NC_USHORT"); break;
+	    case NC_UINT:   printf(" NC_UINT");   break;
+	    default:        fprintf(stderr, "\n%s %s: unknown type for "
+				    "variable %s\n", argv0, argv1,
+				    name);        goto error;
+	}
+	for (d = 0; d < num_dims; d++) {
+	    status = nc_inq_dimname(nc_id, dim_ids[d], name);
+	    if ( status != NC_NOERR ) {
+		fprintf(stderr, "\n%s %s: could not get name for dimension %d "
+			"of %s.\n%s\n", argv0, argv1, d, name,
+			nc_strerror(status));
+		goto error;
+	    }
+	    printf(" %s", name);
+	}
+	printf("\n");
+    }
+    FREE(dim_ids);
+    nc_close(nc_id);
     return 1;
+
+error:
+    FREE(dim_ids);
+    nc_close(nc_id);
+    return 0;
 }
 
 /* nnetcdf data var_name index [index ...] file */
 static int data_cb(int argc, char *argv[])
 {
+    char *argv0, *argv1;		/* argv[0], argv[1] */
     char *nc_fl_nm;			/* Path to NetCDF file */
     int nc_id;				/* NetCDF file identifier */
     char *var_nm;			/* Variable name, from command line */
@@ -111,7 +201,7 @@ static int data_cb(int argc, char *argv[])
 					   call */
     size_t *start = NULL;		/* Where to start slice in NetCDF file.
 					   See netcdf (3). */
-    int num_dim;			/* Number of dimensions of variable */
+    int num_dims;			/* Number of dimensions of variable */
     int *dim_ids = NULL;		/* Dimension identifiers */
     size_t *count = NULL;		/* Count of values along each dimension
 					   for which values will be printed.
@@ -122,10 +212,11 @@ static int data_cb(int argc, char *argv[])
     int llen;				/* Number of elements in each line of
 					   output */
 
-
-    if ( argc < 5 ) {
-	fprintf(stderr, "Usage: %s %s var_name index [index ...] file\n",
-		argv[0], argv[1]);
+    argv0 = argv[0];
+    argv1 = argv[1];
+    if ( argc < 4 ) {
+	fprintf(stderr, "Usage: %s %s var_name [index ...] file\n",
+		argv0, argv1);
 	return 0;
     }
     var_nm = argv[2];
@@ -135,91 +226,95 @@ static int data_cb(int argc, char *argv[])
     /* Open data file and get information about the variable */
     if ( (status = nc_open(nc_fl_nm, 0, &nc_id)) != NC_NOERR ) {
 	fprintf(stderr, "%s %s: failed to open %s.\n%s\n",
-		argv[0], argv[1], nc_fl_nm, nc_strerror(status));
+		argv0, argv1, nc_fl_nm, nc_strerror(status));
 	goto error;
     }
     if ( (status = nc_inq_varid(nc_id, var_nm, &var_id)) != NC_NOERR ) {
 	fprintf(stderr, "%s %s: could not find variable named %s.\n%s\n",
-		argv[0], argv[1], var_nm, nc_strerror(status));
+		argv0, argv1, var_nm, nc_strerror(status));
 	goto error;
     }
     if ( (nc_inq_vartype(nc_id, var_id, &xtype)) != NC_NOERR ) {
 	fprintf(stderr, "%s %s: could not determine type for %s.\n"
-		"%s\n", argv[0], argv[1], var_nm, nc_strerror(status));
+		"%s\n", argv0, argv1, var_nm, nc_strerror(status));
 	goto error;
     }
-    if ( (status = nc_inq_varndims(nc_id, var_id, &num_dim)) != NC_NOERR ) {
+    if ( (status = nc_inq_varndims(nc_id, var_id, &num_dims)) != NC_NOERR ) {
 	fprintf(stderr, "%s %s: could not get number of dimensions for %s.\n"
-		"%s\n", argv[0], argv[1], var_nm, nc_strerror(status));
+		"%s\n", argv0, argv1, var_nm, nc_strerror(status));
 	goto error;
     }
-    if ( num_idx > num_dim ) {
+    if ( num_idx > num_dims ) {
 	fprintf(stderr, "%s %s: number of indeces exceeds number of "
-		"dimensions.\n", argv[0], argv[1]);
+		"dimensions.\n", argv0, argv1);
 	goto error;
     }
-    if ( !(dim_ids = CALLOC(num_dim, sizeof(int))) ) {
+    if ( !(dim_ids = CALLOC(num_dims, sizeof(int))) ) {
 	fprintf(stderr, "%s %s: could not allocate array of %u dimension "
-		"identifiers.\n", argv[0], argv[1], num_dim);
+		"identifiers.\n", argv0, argv1, num_dims);
 	goto error;
     }
-    if ( !(start = CALLOC(num_dim, sizeof(size_t))) ) {
+    if ( !(start = CALLOC(num_dims, sizeof(size_t))) ) {
 	fprintf(stderr, "%s %s: could not allocate array of %u indeces.\n",
-		argv[0], argv[1], num_dim);
+		argv0, argv1, num_dims);
 	goto error;
     }
-    if ( !(count = CALLOC(num_dim, sizeof(size_t))) ) {
+    if ( !(count = CALLOC(num_dims, sizeof(size_t))) ) {
 	fprintf(stderr, "%s %s: could not allocate array of %u dimension "
-		"sizes.\n", argv[0], argv[1], num_dim);
+		"sizes.\n", argv0, argv1, num_dims);
 	goto error;
-    }
-    for (d = 0; d < num_dim; d++) {
-	count[d] = 1;
     }
     if ( (status = nc_inq_vardimid(nc_id, var_id, dim_ids)) != NC_NOERR ) {
 	fprintf(stderr, "%s %s: could not get dimension identifiers for %s.\n"
-		"%s\n", argv[0], argv[1], var_nm, nc_strerror(status));
+		"%s\n", argv0, argv1, var_nm, nc_strerror(status));
 	goto error;
     }
 
+    /*
+       Initialize count array with sizes of each dimension. Thus, default
+       is to print all values for each dimension.
+     */
 
-    /* Put indeces from command line into start */
-    for (a = 3, d = 0; a < argc - 1; a++, d++) {
-	if ( sscanf(argv[a], "%d", start + d) != 1 ) {
-	    fprintf(stderr, "%s %s: expected integer for index %d, got %s\n",
-		    argv[0], argv[1], a - 3, argv[a]);
+    for (d = 0; d < num_dims; d++) {
+	if ( (status = nc_inq_dimlen(nc_id, dim_ids[d], count + d))
+		!= NC_NOERR ) {
+	    fprintf(stderr, "%s %s: could not get length for dimension %d.\n"
+		    "%s\n", argv0, argv1, d, nc_strerror(status));
 	    goto error;
 	}
     }
 
     /*
-       No more indeces on command line. Leave start[d] = 0 for remaining
-       dimensions. Set remaining dimensions of count to the dimension sizes.
+       Put indeces from command line into start. Set corresponding element
+       of count to 1, indicating that the only element of this dimension to be
+       printed is the one the index specifies, instead of all members.
      */
 
-    for (num_elem = 1 ; d < num_dim; d++) {
-	status = nc_inq_dimlen(nc_id, dim_ids[d], count + d);
-	if ( status != NC_NOERR ) {
-	    fprintf(stderr, "%s %s: could not get length for dimension %d.\n"
-		    "%s\n", argv[0], argv[1], d, nc_strerror(status));
+    for (a = 3, d = 0; a < argc - 1; a++, d++) {
+	if ( sscanf(argv[a], "%d", start + d) != 1 ) {
+	    fprintf(stderr, "%s %s: expected integer for index %d, got %s\n",
+		    argv0, argv1, a - 3, argv[a]);
 	    goto error;
 	}
-	num_elem *= count[d];
+	count[d] = 1;
     }
 
     /* Fetch and print array */
-    llen = count[num_dim - 1];
+    for (num_elem = 1, d = 0; d < num_dims; d++) {
+	num_elem *= count[d];
+    }
+    llen = count[num_dims - 1];
     switch (xtype) {
 	case NC_BYTE:
 	case NC_CHAR:
 	    if ( !(dat = CALLOC(num_elem, 1)) ) {
 		fprintf(stderr, "%s %s: could not allocate data array "
-			"with %d elements.\n", argv[0], argv[1], num_elem);
+			"with %d elements.\n", argv0, argv1, num_elem);
 	    }
 	    status = nc_get_vara_text(nc_id, var_id, start, count, (char *)dat);
 	    if ( status != NC_NOERR ) {
 		fprintf(stderr, "%s %s: could not read %s.\n%s\n",
-			argv[0], argv[1], var_nm, nc_strerror(status));
+			argv0, argv1, var_nm, nc_strerror(status));
 	    }
 	    for (d = 0; d < num_elem; d++) {
 		printf("%d%s",
@@ -230,13 +325,13 @@ static int data_cb(int argc, char *argv[])
 	case NC_SHORT:
 	    if ( !(dat = CALLOC(num_elem, 2)) ) {
 		fprintf(stderr, "%s %s: could not allocate data array "
-			"with %d elements.\n", argv[0], argv[1], num_elem);
+			"with %d elements.\n", argv0, argv1, num_elem);
 	    }
 	    status = nc_get_vara_short(nc_id, var_id, start, count,
 		    (short *)dat);
 	    if ( status != NC_NOERR ) {
 		fprintf(stderr, "%s %s: could not read %s.\n%s\n",
-			argv[0], argv[1], var_nm, nc_strerror(status));
+			argv0, argv1, var_nm, nc_strerror(status));
 	    }
 	    for (d = 0; d < num_elem; d++) {
 		printf("%d%s",
@@ -247,12 +342,12 @@ static int data_cb(int argc, char *argv[])
 	case NC_INT:
 	    if ( !(dat = CALLOC(num_elem, 4)) ) {
 		fprintf(stderr, "%s %s: could not allocate data array "
-			"with %d elements.\n", argv[0], argv[1], num_elem);
+			"with %d elements.\n", argv0, argv1, num_elem);
 	    }
 	    status = nc_get_vara_int(nc_id, var_id, start, count, (int *)dat);
 	    if ( status != NC_NOERR ) {
 		fprintf(stderr, "%s %s: could not read %s.\n%s\n",
-			argv[0], argv[1], var_nm, nc_strerror(status));
+			argv0, argv1, var_nm, nc_strerror(status));
 	    }
 	    for (d = 0; d < num_elem; d++) {
 		printf("%d%s",
@@ -263,13 +358,13 @@ static int data_cb(int argc, char *argv[])
 	case NC_FLOAT:
 	    if ( !(dat = CALLOC(num_elem, 4)) ) {
 		fprintf(stderr, "%s %s: could not allocate data array "
-			"with %d elements.\n", argv[0], argv[1], num_elem);
+			"with %d elements.\n", argv0, argv1, num_elem);
 	    }
 	    status = nc_get_vara_float(nc_id, var_id, start, count,
 		    (float *)dat);
 	    if ( status != NC_NOERR ) {
 		fprintf(stderr, "%s %s: could not read %s.\n%s\n",
-			argv[0], argv[1], var_nm, nc_strerror(status));
+			argv0, argv1, var_nm, nc_strerror(status));
 	    }
 	    for (d = 0; d < num_elem; d++) {
 		printf("%g%s",
@@ -280,13 +375,13 @@ static int data_cb(int argc, char *argv[])
 	case NC_DOUBLE:
 	    if ( !(dat = CALLOC(num_elem, 8)) ) {
 		fprintf(stderr, "%s %s: could not allocate data array "
-			"with %d elements.\n", argv[0], argv[1], num_elem);
+			"with %d elements.\n", argv0, argv1, num_elem);
 	    }
 	    status = nc_get_vara_double(nc_id, var_id, start, count,
 		    (double *)dat);
 	    if ( status != NC_NOERR ) {
 		fprintf(stderr, "%s %s: could not read %s.\n%s\n",
-			argv[0], argv[1], var_nm, nc_strerror(status));
+			argv0, argv1, var_nm, nc_strerror(status));
 	    }
 	    for (d = 0; d < num_elem; d++) {
 		printf("%g%s",
@@ -297,13 +392,13 @@ static int data_cb(int argc, char *argv[])
 	case NC_UBYTE:
 	    if ( !(dat = CALLOC(num_elem, 1)) ) {
 		fprintf(stderr, "%s %s: could not allocate data array "
-			"with %d elements.\n", argv[0], argv[1], num_elem);
+			"with %d elements.\n", argv0, argv1, num_elem);
 	    }
 	    status = nc_get_vara_ubyte(nc_id, var_id, start, count,
 		    (unsigned char *)dat);
 	    if ( status != NC_NOERR ) {
 		fprintf(stderr, "%s %s: could not read %s.\n%s\n",
-			argv[0], argv[1], var_nm, nc_strerror(status));
+			argv0, argv1, var_nm, nc_strerror(status));
 	    }
 	    for (d = 0; d < num_elem; d++) {
 		printf("%d%s",
@@ -314,13 +409,13 @@ static int data_cb(int argc, char *argv[])
 	case NC_USHORT:
 	    if ( !(dat = CALLOC(num_elem, 2)) ) {
 		fprintf(stderr, "%s %s: could not allocate data array "
-			"with %d elements.\n", argv[0], argv[1], num_elem);
+			"with %d elements.\n", argv0, argv1, num_elem);
 	    }
 	    status = nc_get_vara_ushort(nc_id, var_id, start, count,
 		    (unsigned short *)dat);
 	    if ( status != NC_NOERR ) {
 		fprintf(stderr, "%s %s: could not read %s.\n%s\n",
-			argv[0], argv[1], var_nm, nc_strerror(status));
+			argv0, argv1, var_nm, nc_strerror(status));
 	    }
 	    for (d = 0; d < num_elem; d++) {
 		printf("%d%s",
@@ -331,13 +426,13 @@ static int data_cb(int argc, char *argv[])
 	case NC_UINT:
 	    if ( !(dat = CALLOC(num_elem, 4)) ) {
 		fprintf(stderr, "%s %s: could not allocate data array "
-			"with %d elements.\n", argv[0], argv[1], num_elem);
+			"with %d elements.\n", argv0, argv1, num_elem);
 	    }
 	    status = nc_get_vara_uint(nc_id, var_id, start, count,
 		    (unsigned int *)dat);
 	    if ( status != NC_NOERR ) {
 		fprintf(stderr, "%s %s: could not read %s.\n%s\n",
-			argv[0], argv[1], var_nm, nc_strerror(status));
+			argv0, argv1, var_nm, nc_strerror(status));
 	    }
 	    for (d = 0; d < num_elem; d++) {
 		printf("%d%s",
@@ -347,7 +442,7 @@ static int data_cb(int argc, char *argv[])
 	    break;
 	default:
 	    fprintf(stderr, "%s %s: cannot read type of %s\n",
-		    argv[0], argv[1], var_nm);
+		    argv0, argv1, var_nm);
 	    goto error;
     }
 
