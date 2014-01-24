@@ -37,7 +37,7 @@
 #include "nnetcdf.h"
 
 /* Open a NetCDF file. See nnetcdf (3). */
-int NNC_Open(char *file_nm, jmp_buf error_env)
+int NNC_Open(const char *file_nm, jmp_buf error_env)
 {
     int status;
     int ncid;
@@ -51,7 +51,7 @@ int NNC_Open(char *file_nm, jmp_buf error_env)
 }
 
 /* Return the size of a NetCDF dimension.  See nnetcdf (3). */
-size_t NNC_Inq_Dim(int ncid, char *name, jmp_buf error_env)
+size_t NNC_Inq_Dim(int ncid, const char *name, jmp_buf error_env)
 {
     int dimid;
     int status;
@@ -72,7 +72,7 @@ size_t NNC_Inq_Dim(int ncid, char *name, jmp_buf error_env)
 }
 
 /* Return a string from a NetCDF file. See nnetcdf (3). */
-char * NNC_Get_String(int ncid, char *name, jmp_buf error_env)
+char * NNC_Get_String(int ncid, const char *name, jmp_buf error_env)
 {
     char *val;		/* Return value */
     int varid;		/* Variable identifier */
@@ -115,7 +115,8 @@ char * NNC_Get_String(int ncid, char *name, jmp_buf error_env)
 }
 
 /* Retrieve a character variable from a NetCDF file. See nnetcdf (3). */
-char *NNC_Get_Var_Text(int ncid, char *name, char *cPtr, jmp_buf error_env)
+char *NNC_Get_Var_Text(int ncid, const char *name, char *cPtr,
+	jmp_buf error_env)
 {
     int varid;		/* Variable identifier */
     int status;
@@ -173,8 +174,8 @@ char *NNC_Get_Var_Text(int ncid, char *name, char *cPtr, jmp_buf error_env)
 }
 
 /* Retrieve an unsigned char variable from a NetCDF file. See nnetcdf (3). */
-unsigned char * NNC_Get_Var_UChar(int ncid, char *name, unsigned char *uPtr,
-	jmp_buf error_env)
+unsigned char * NNC_Get_Var_UChar(int ncid, const char *name,
+	unsigned char *uPtr, jmp_buf error_env)
 {
     int varid;		/* Variable identifier */
     int status;
@@ -232,7 +233,7 @@ unsigned char * NNC_Get_Var_UChar(int ncid, char *name, unsigned char *uPtr,
 }
 
 /* Retrieve an integer variable from a NetCDF file. See nnetcdf (3). */
-int * NNC_Get_Var_Int(int ncid, char *name, int *iPtr, jmp_buf error_env)
+int * NNC_Get_Var_Int(int ncid, const char *name, int *iPtr, jmp_buf error_env)
 {
     int varid;		/* Variable identifier */
     int status;
@@ -291,7 +292,7 @@ int * NNC_Get_Var_Int(int ncid, char *name, int *iPtr, jmp_buf error_env)
 }
 
 /* Retrieve an unsigned integer variable from a NetCDF file. See nnetcdf (3). */
-unsigned * NNC_Get_Var_UInt(int ncid, char *name, unsigned *iPtr,
+unsigned * NNC_Get_Var_UInt(int ncid, const char *name, unsigned *iPtr,
 	jmp_buf error_env)
 {
     int varid;		/* Variable identifier */
@@ -351,7 +352,8 @@ unsigned * NNC_Get_Var_UInt(int ncid, char *name, unsigned *iPtr,
 }
 
 /* Retrieve a float variable from a NetCDF file. See nnetcdf (3). */
-float * NNC_Get_Var_Float(int ncid, char *name, float *fPtr, jmp_buf error_env)
+float * NNC_Get_Var_Float(int ncid, const char *name, float *fPtr,
+	jmp_buf error_env)
 {
     int varid;		/* Variable identifier */
     int status;
@@ -411,7 +413,7 @@ float * NNC_Get_Var_Float(int ncid, char *name, float *fPtr, jmp_buf error_env)
 }
 
 /* Retrieve a double variable from a NetCDF file. See nnetcdf (3). */
-double * NNC_Get_Var_Double(int ncid, char *name, double *dPtr,
+double * NNC_Get_Var_Double(int ncid, const char *name, double *dPtr,
 	jmp_buf error_env)
 {
     int varid;		/* Variable identifier */
@@ -472,7 +474,8 @@ double * NNC_Get_Var_Double(int ncid, char *name, double *dPtr,
 }
 
 /* Get a string attribute associated with a NetCDF variable. See nnetcdf (3). */
-char * NNC_Get_Att_String(int ncid, char *name, char *att, jmp_buf error_env)
+char * NNC_Get_Att_String(int ncid, const char *name, char *att,
+	jmp_buf error_env)
 {
     int varid;
     int status;
@@ -508,7 +511,7 @@ char * NNC_Get_Att_String(int ncid, char *name, char *att, jmp_buf error_env)
 }
 
 /* Get integer attribute associated with a NetCDF variable. See nnetcdf (3). */
-int NNC_Get_Att_Int(int ncid, char *name, char *att, jmp_buf error_env)
+int NNC_Get_Att_Int(int ncid, const char *name, char *att, jmp_buf error_env)
 {
     int varid;
     int status;
@@ -536,7 +539,8 @@ int NNC_Get_Att_Int(int ncid, char *name, char *att, jmp_buf error_env)
    See nnetcdf (3).
  */
 
-unsigned NNC_Get_Att_UInt(int ncid, char *name, char *att, jmp_buf error_env)
+unsigned NNC_Get_Att_UInt(int ncid, const char *name, char *att,
+	jmp_buf error_env)
 {
     int varid;
     int status;
@@ -560,7 +564,8 @@ unsigned NNC_Get_Att_UInt(int ncid, char *name, char *att, jmp_buf error_env)
 }
 
 /* Get a float attribute associated with a NetCDF variable. See nnetcdf (3). */
-float NNC_Get_Att_Float(int ncid, char *name, char *att, jmp_buf error_env)
+float NNC_Get_Att_Float(int ncid, const char *name, char *att,
+	jmp_buf error_env)
 {
     int varid;
     int status;
