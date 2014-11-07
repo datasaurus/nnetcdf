@@ -1,0 +1,3 @@
+This library provides some convenience functions that call netcdf
+functions. They hide most of the status checking and error handling
+with setjmp and longjmp.
