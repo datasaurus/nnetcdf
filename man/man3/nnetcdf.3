@@ -27,8 +27,8 @@ NNC_Open, NNC_Inq_Dim, NNC_Get_Var_Text, NNC_Get_String, NNC_Get_Var_Uchar, NNC_
     \fBjmp_buf\fP \fIerror_env\fP);
 \fBchar *\fP \fBNNC_Get_Att_String\fP(\fBint\fP \fIncid\fP, \fBchar *\fP\fIvar_name\fP, \fBchar *\fP\fIatt\fP,
     \fBjmp_buf\fP \fIerror_env\fP);
-\fBint\fP \fBNNC_Get_Att_Int\fP(\fBint\fP \fIncid\fP, \fBchar *\fP\fIvar_name\fP, \fBchar *\fP\fIatt\fP, \fBjmp_buf\fP \fIerror_env\fP);
-\fBfloat\fP \fBNNC_Get_Att_Float\fP(\fBint\fP \fIncid\fP, \fBchar *\fP\fIvar_name\fP, \fBchar *\fP\fIatt\fP, \fBjmp_buf\fP \fIerror_env\fP);
+\fBint *\fP \fBNNC_Get_Att_Int\fP(\fBint\fP \fIncid\fP, \fBchar *\fP\fIvar_name\fP, \fBchar *\fP\fIatt\fP, \fBjmp_buf\fP \fIerror_env\fP);
+\fBfloat *\fP \fBNNC_Get_Att_Float\fP(\fBint\fP \fIncid\fP, \fBchar *\fP\fIvar_name\fP, \fBchar *\fP\fIatt\fP, \fBjmp_buf\fP \fIerror_env\fP);
 .fi
 .SH DESCRIPTION
 The following functions simplify access to some NetCDF functions.
@@ -98,6 +98,8 @@ messages to \fBstderr\fP.
 \fIvar_name\fP in the NetCDF file identified as \fBncid\fP, which should be a
 return value from \fBNNC_Open()\fP or \fBnc_open()\fP.
 If \fIvar_name\fP is "\fBNC_GLOBAL\fP", a global attribute is sought.
+Memory is allocated for the returned array.  This memory should eventually
+be freed with a call to \fBFREE()\fP.
 It uses \fIerror_env\fP to handle errors as described above.  It prints error
 messages to \fBstderr\fP.
 
@@ -105,6 +107,8 @@ messages to \fBstderr\fP.
 named \fIvar_name\fP in the NetCDF file identified as \fBncid\fP, which should
 be a return value from \fBNNC_Open()\fP or \fBnc_open()\fP.
 If \fIvar_name\fP is "\fBNC_GLOBAL\fP", a global attribute is sought.
+Memory is allocated for the returned array.  This memory should eventually
+be freed with a call to \fBFREE()\fP.
 It uses \fIerror_env\fP to handle errors as described above.  It prints error
 messages to \fBstderr\fP.
 

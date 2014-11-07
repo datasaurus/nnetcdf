@@ -510,12 +510,13 @@ char * NNC_Get_Att_String(int ncid, const char *name, const char *att,
 }
 
 /* Get integer attribute associated with a NetCDF variable. See nnetcdf (3). */
-int NNC_Get_Att_Int(int ncid, const char *name, const char *att,
+int *NNC_Get_Att_Int(int ncid, const char *name, const char *att,
 	jmp_buf error_env)
 {
     int varid;
     int status;
-    int i;
+    size_t len;
+    int *i;
 
     if (strcmp(name, "NC_GLOBAL") == 0) {
 	varid = NC_GLOBAL;
@@ -524,7 +525,17 @@ int NNC_Get_Att_Int(int ncid, const char *name, const char *att,
 		name, nc_strerror(status));
 	longjmp(error_env, NNCDF_ERROR);
     }
-    if ((status = nc_get_att_int(ncid, varid, att, &i)) != 0) {
+    if ((status = nc_inq_attlen(ncid, varid, att, &len)) != 0) {
+	fprintf(stderr, "Could not get string length for %s of %s."
+		" NetCDF error message is: %s\n",
+		att, name, nc_strerror(status));
+	longjmp(error_env, NNCDF_ERROR);
+    }
+    if ( !(i = CALLOC(len, sizeof(int))) ) {
+	fprintf(stderr, "Allocation failed for %s\n",name);
+	longjmp(error_env, NNCDF_ERROR);
+    }
+    if ((status = nc_get_att_int(ncid, varid, att, i)) != 0) {
 	fprintf(stderr, "Could not get %s attribute for %s."
 		" NetCDF error message is: %s\n",
 		att, name, nc_strerror(status));
@@ -538,12 +549,13 @@ int NNC_Get_Att_Int(int ncid, const char *name, const char *att,
    See nnetcdf (3).
  */
 
-unsigned NNC_Get_Att_UInt(int ncid, const char *name, const char *att,
+unsigned *NNC_Get_Att_UInt(int ncid, const char *name, const char *att,
 	jmp_buf error_env)
 {
     int varid;
     int status;
-    unsigned i;
+    size_t len;
+    unsigned *i;
 
     if (strcmp(name, "NC_GLOBAL") == 0) {
 	varid = NC_GLOBAL;
@@ -552,7 +564,17 @@ unsigned NNC_Get_Att_UInt(int ncid, const char *name, const char *att,
 		name, nc_strerror(status));
 	longjmp(error_env, NNCDF_ERROR);
     }
-    if ((status = nc_get_att_uint(ncid, varid, att, &i)) != 0) {
+    if ((status = nc_inq_attlen(ncid, varid, att, &len)) != 0) {
+	fprintf(stderr, "Could not get attribute length for %s of %s."
+		" NetCDF error message is: %s\n",
+		att, name, nc_strerror(status));
+	longjmp(error_env, NNCDF_ERROR);
+    }
+    if ( !(i = CALLOC(len, sizeof(unsigned))) ) {
+	fprintf(stderr, "Allocation failed for %s\n",name);
+	longjmp(error_env, NNCDF_ERROR);
+    }
+    if ((status = nc_get_att_uint(ncid, varid, att, i)) != 0) {
 	fprintf(stderr, "Could not get %s attribute for %s."
 		" NetCDF error message is: %s\n",
 		att, name, nc_strerror(status));
@@ -562,12 +584,13 @@ unsigned NNC_Get_Att_UInt(int ncid, const char *name, const char *att,
 }
 
 /* Get a float attribute associated with a NetCDF variable. See nnetcdf (3). */
-float NNC_Get_Att_Float(int ncid, const char *name, const char *att,
+float *NNC_Get_Att_Float(int ncid, const char *name, const char *att,
 	jmp_buf error_env)
 {
     int varid;
     int status;
-    float v;
+    size_t len;
+    float *v;
 
     if (strcmp(name, "NC_GLOBAL") == 0) {
 	varid = NC_GLOBAL;
@@ -576,7 +599,17 @@ float NNC_Get_Att_Float(int ncid, const char *name, const char *att,
 		name, nc_strerror(status));
 	longjmp(error_env, NNCDF_ERROR);
     }
-    if ((status = nc_get_att_float(ncid, varid, att, &v)) != 0) {
+    if ((status = nc_inq_attlen(ncid, varid, att, &len)) != 0) {
+	fprintf(stderr, "Could not get attribute length for %s of %s."
+		" NetCDF error message is: %s\n",
+		att, name, nc_strerror(status));
+	longjmp(error_env, NNCDF_ERROR);
+    }
+    if ( !(v = CALLOC(len, sizeof(float))) ) {
+	fprintf(stderr, "Allocation failed for %s\n",name);
+	longjmp(error_env, NNCDF_ERROR);
+    }
+    if ((status = nc_get_att_float(ncid, varid, att, v)) != 0) {
 	fprintf(stderr, "Could not get %s attribute for %s."
 		" NetCDF error message is: %s\n",
 		att, name, nc_strerror(status));
