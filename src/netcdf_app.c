@@ -29,7 +29,7 @@
    .
    .	Please send feedback to dev0@trekix.net
    .
-   .	$Revision: 1.3 $ $Date: 2013/12/11 21:53:03 $
+   .	$Revision: 1.4 $ $Date: 2013/12/13 20:18:28 $
  */
 
 #include "unix_defs.h"
@@ -291,7 +291,7 @@ static int data_cb(int argc, char *argv[])
      */
 
     for (a = 3, d = 0; a < argc - 1; a++, d++) {
-	if ( sscanf(argv[a], "%d", start + d) != 1 ) {
+	if ( sscanf(argv[a], "%zd", start + d) != 1 ) {
 	    fprintf(stderr, "%s %s: expected integer for index %d, got %s\n",
 		    argv0, argv1, a - 3, argv[a]);
 	    goto error;
@@ -309,12 +309,13 @@ static int data_cb(int argc, char *argv[])
 	case NC_CHAR:
 	    if ( !(dat = CALLOC(num_elem, 1)) ) {
 		fprintf(stderr, "%s %s: could not allocate data array "
-			"with %d elements.\n", argv0, argv1, num_elem);
+			"with %zd elements.\n", argv0, argv1, num_elem);
 	    }
 	    status = nc_get_vara_text(nc_id, var_id, start, count, (char *)dat);
 	    if ( status != NC_NOERR ) {
 		fprintf(stderr, "%s %s: could not read %s.\n%s\n",
 			argv0, argv1, var_nm, nc_strerror(status));
+		goto error;
 	    }
 	    for (d = 0; d < num_elem; d++) {
 		printf("%d%s",
@@ -325,13 +326,14 @@ static int data_cb(int argc, char *argv[])
 	case NC_SHORT:
 	    if ( !(dat = CALLOC(num_elem, 2)) ) {
 		fprintf(stderr, "%s %s: could not allocate data array "
-			"with %d elements.\n", argv0, argv1, num_elem);
+			"with %zd elements.\n", argv0, argv1, num_elem);
 	    }
 	    status = nc_get_vara_short(nc_id, var_id, start, count,
 		    (short *)dat);
 	    if ( status != NC_NOERR ) {
 		fprintf(stderr, "%s %s: could not read %s.\n%s\n",
 			argv0, argv1, var_nm, nc_strerror(status));
+		goto error;
 	    }
 	    for (d = 0; d < num_elem; d++) {
 		printf("%d%s",
@@ -342,12 +344,13 @@ static int data_cb(int argc, char *argv[])
 	case NC_INT:
 	    if ( !(dat = CALLOC(num_elem, 4)) ) {
 		fprintf(stderr, "%s %s: could not allocate data array "
-			"with %d elements.\n", argv0, argv1, num_elem);
+			"with %zd elements.\n", argv0, argv1, num_elem);
 	    }
 	    status = nc_get_vara_int(nc_id, var_id, start, count, (int *)dat);
 	    if ( status != NC_NOERR ) {
 		fprintf(stderr, "%s %s: could not read %s.\n%s\n",
 			argv0, argv1, var_nm, nc_strerror(status));
+		goto error;
 	    }
 	    for (d = 0; d < num_elem; d++) {
 		printf("%d%s",
@@ -358,13 +361,14 @@ static int data_cb(int argc, char *argv[])
 	case NC_FLOAT:
 	    if ( !(dat = CALLOC(num_elem, 4)) ) {
 		fprintf(stderr, "%s %s: could not allocate data array "
-			"with %d elements.\n", argv0, argv1, num_elem);
+			"with %zd elements.\n", argv0, argv1, num_elem);
 	    }
 	    status = nc_get_vara_float(nc_id, var_id, start, count,
 		    (float *)dat);
 	    if ( status != NC_NOERR ) {
 		fprintf(stderr, "%s %s: could not read %s.\n%s\n",
 			argv0, argv1, var_nm, nc_strerror(status));
+		goto error;
 	    }
 	    for (d = 0; d < num_elem; d++) {
 		printf("%g%s",
@@ -375,13 +379,14 @@ static int data_cb(int argc, char *argv[])
 	case NC_DOUBLE:
 	    if ( !(dat = CALLOC(num_elem, 8)) ) {
 		fprintf(stderr, "%s %s: could not allocate data array "
-			"with %d elements.\n", argv0, argv1, num_elem);
+			"with %zd elements.\n", argv0, argv1, num_elem);
 	    }
 	    status = nc_get_vara_double(nc_id, var_id, start, count,
 		    (double *)dat);
 	    if ( status != NC_NOERR ) {
 		fprintf(stderr, "%s %s: could not read %s.\n%s\n",
 			argv0, argv1, var_nm, nc_strerror(status));
+		goto error;
 	    }
 	    for (d = 0; d < num_elem; d++) {
 		printf("%g%s",
@@ -392,13 +397,14 @@ static int data_cb(int argc, char *argv[])
 	case NC_UBYTE:
 	    if ( !(dat = CALLOC(num_elem, 1)) ) {
 		fprintf(stderr, "%s %s: could not allocate data array "
-			"with %d elements.\n", argv0, argv1, num_elem);
+			"with %zd elements.\n", argv0, argv1, num_elem);
 	    }
 	    status = nc_get_vara_ubyte(nc_id, var_id, start, count,
 		    (unsigned char *)dat);
 	    if ( status != NC_NOERR ) {
 		fprintf(stderr, "%s %s: could not read %s.\n%s\n",
 			argv0, argv1, var_nm, nc_strerror(status));
+		goto error;
 	    }
 	    for (d = 0; d < num_elem; d++) {
 		printf("%d%s",
@@ -409,13 +415,14 @@ static int data_cb(int argc, char *argv[])
 	case NC_USHORT:
 	    if ( !(dat = CALLOC(num_elem, 2)) ) {
 		fprintf(stderr, "%s %s: could not allocate data array "
-			"with %d elements.\n", argv0, argv1, num_elem);
+			"with %zd elements.\n", argv0, argv1, num_elem);
 	    }
 	    status = nc_get_vara_ushort(nc_id, var_id, start, count,
 		    (unsigned short *)dat);
 	    if ( status != NC_NOERR ) {
 		fprintf(stderr, "%s %s: could not read %s.\n%s\n",
 			argv0, argv1, var_nm, nc_strerror(status));
+		goto error;
 	    }
 	    for (d = 0; d < num_elem; d++) {
 		printf("%d%s",
@@ -426,13 +433,14 @@ static int data_cb(int argc, char *argv[])
 	case NC_UINT:
 	    if ( !(dat = CALLOC(num_elem, 4)) ) {
 		fprintf(stderr, "%s %s: could not allocate data array "
-			"with %d elements.\n", argv0, argv1, num_elem);
+			"with %zd elements.\n", argv0, argv1, num_elem);
 	    }
 	    status = nc_get_vara_uint(nc_id, var_id, start, count,
 		    (unsigned int *)dat);
 	    if ( status != NC_NOERR ) {
 		fprintf(stderr, "%s %s: could not read %s.\n%s\n",
 			argv0, argv1, var_nm, nc_strerror(status));
+		goto error;
 	    }
 	    for (d = 0; d < num_elem; d++) {
 		printf("%d%s",

@@ -48,9 +48,9 @@ int *NNC_Get_Var_Int(int, const char *, int *, jmp_buf);
 unsigned *NNC_Get_Var_UInt(int, const char *, unsigned *, jmp_buf);
 float *NNC_Get_Var_Float(int, const char *, float *, jmp_buf);
 double *NNC_Get_Var_Double(int, const char *, double *, jmp_buf);
-char *NNC_Get_Att_String(int, const char *, char *, jmp_buf);
-int NNC_Get_Att_Int(int, const char *, char *, jmp_buf);
-unsigned NNC_Get_Att_UInt(int, const char *, char *, jmp_buf);
-float NNC_Get_Att_Float(int, const char *, char *, jmp_buf);
+char *NNC_Get_Att_String(int, const char *, const char *, jmp_buf);
+int NNC_Get_Att_Int(int, const char *, const char *, jmp_buf);
+unsigned NNC_Get_Att_UInt(int, const char *, const char *, jmp_buf);
+float NNC_Get_Att_Float(int, const char *, const char *, jmp_buf);
 
 #endif

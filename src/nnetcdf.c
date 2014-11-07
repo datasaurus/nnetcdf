@@ -474,7 +474,7 @@ double * NNC_Get_Var_Double(int ncid, const char *name, double *dPtr,
 }
 
 /* Get a string attribute associated with a NetCDF variable. See nnetcdf (3). */
-char * NNC_Get_Att_String(int ncid, const char *name, char *att,
+char * NNC_Get_Att_String(int ncid, const char *name, const char *att,
 	jmp_buf error_env)
 {
     int varid;
@@ -484,7 +484,6 @@ char * NNC_Get_Att_String(int ncid, const char *name, char *att,
 
     if (strcmp(name, "NC_GLOBAL") == 0) {
 	varid = NC_GLOBAL;
-	name = "global attribute";
     } else if ((status = nc_inq_varid(ncid, name, &varid)) != 0) {
 	fprintf(stderr, "No variable named %s. NetCDF error message is: %s\n",
 		name, nc_strerror(status));
@@ -511,7 +510,8 @@ char * NNC_Get_Att_String(int ncid, const char *name, char *att,
 }
 
 /* Get integer attribute associated with a NetCDF variable. See nnetcdf (3). */
-int NNC_Get_Att_Int(int ncid, const char *name, char *att, jmp_buf error_env)
+int NNC_Get_Att_Int(int ncid, const char *name, const char *att,
+	jmp_buf error_env)
 {
     int varid;
     int status;
@@ -519,7 +519,6 @@ int NNC_Get_Att_Int(int ncid, const char *name, char *att, jmp_buf error_env)
 
     if (strcmp(name, "NC_GLOBAL") == 0) {
 	varid = NC_GLOBAL;
-	name = "global attribute";
     } else if ((status = nc_inq_varid(ncid, name, &varid)) != 0) {
 	fprintf(stderr, "No variable named %s. NetCDF error message is: %s\n",
 		name, nc_strerror(status));
@@ -539,7 +538,7 @@ int NNC_Get_Att_Int(int ncid, const char *name, char *att, jmp_buf error_env)
    See nnetcdf (3).
  */
 
-unsigned NNC_Get_Att_UInt(int ncid, const char *name, char *att,
+unsigned NNC_Get_Att_UInt(int ncid, const char *name, const char *att,
 	jmp_buf error_env)
 {
     int varid;
@@ -548,7 +547,6 @@ unsigned NNC_Get_Att_UInt(int ncid, const char *name, char *att,
 
     if (strcmp(name, "NC_GLOBAL") == 0) {
 	varid = NC_GLOBAL;
-	name = "global attribute";
     } else if ((status = nc_inq_varid(ncid, name, &varid)) != 0) {
 	fprintf(stderr, "No variable named %s. NetCDF error message is: %s\n",
 		name, nc_strerror(status));
@@ -564,7 +562,7 @@ unsigned NNC_Get_Att_UInt(int ncid, const char *name, char *att,
 }
 
 /* Get a float attribute associated with a NetCDF variable. See nnetcdf (3). */
-float NNC_Get_Att_Float(int ncid, const char *name, char *att,
+float NNC_Get_Att_Float(int ncid, const char *name, const char *att,
 	jmp_buf error_env)
 {
     int varid;
@@ -573,7 +571,6 @@ float NNC_Get_Att_Float(int ncid, const char *name, char *att,
 
     if (strcmp(name, "NC_GLOBAL") == 0) {
 	varid = NC_GLOBAL;
-	name = "global attribute";
     } else if ((status = nc_inq_varid(ncid, name, &varid)) != 0) {
 	fprintf(stderr, "No variable named %s. NetCDF error message is: %s\n",
 		name, nc_strerror(status));
@@ -587,3 +584,4 @@ float NNC_Get_Att_Float(int ncid, const char *name, char *att,
     }
     return v;
 }
+
