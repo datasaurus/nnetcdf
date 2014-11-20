@@ -44,7 +44,7 @@ NETCDF_LIBS = -lnetcdf
 LIBS = ${NETCDF_LIBS} ${EFENCE_LIBS} -lm
 
 RM = rm -fr
-CP = cp -f
+CP = cp -p -f
 
 .SUFFIXES : .o
 
